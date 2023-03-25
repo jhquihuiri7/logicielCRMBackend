@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"log"
+	"net/http"
 )
 
 type RequestStandard struct {
@@ -40,4 +41,10 @@ func (r *RequestBulk) ParseRequestBulkData(c *gin.Context) {
 func (resp *RequestResponse) Marshal() string {
 	JSONresponse, _ := json.Marshal(resp)
 	return string(JSONresponse)
+}
+func (r *RequestResponse) ParseResponse(response *http.Response) {
+	err := json.NewDecoder(response.Body).Decode(&r)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

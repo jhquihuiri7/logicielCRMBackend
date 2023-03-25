@@ -4,16 +4,19 @@ import (
 	"database/sql"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"logicielcrm/models/auth"
+	"logicielcrm/models/request"
 	"net/http"
 	"os"
 	"time"
 )
 
 var (
-	db  *sql.DB
-	err error
+	db     *sql.DB
+	err    error
+	router *gin.Engine
 )
 
 func init() {
@@ -24,7 +27,7 @@ func init() {
 	}
 }
 func main() {
-	router := gin.New()
+	router = gin.New()
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"PUT", "PATCH", "POST", "GET", "OPTIONS"},
@@ -39,6 +42,7 @@ func main() {
 	}))
 	router.POST("/api/login", Login)
 	router.GET("/api/validateToken", ValidateToken)
+	router.POST("/api/sendBulkMail", BulkMail)
 
 	port := os.Getenv("PORT")
 	if err = http.ListenAndServe(":"+port, router); err != nil {
@@ -54,5 +58,20 @@ func Login(c *gin.Context) {
 func ValidateToken(c *gin.Context) {
 	var request auth.AuthResponse
 	response := request.ValidateToken(c.Request, db)
+	c.Writer.WriteString(response.Marshal())
+}
+func BulkMail(c *gin.Context) {
+	var response request.RequestResponse
+
+	resp, err := http.Post(
+		"https://mailservicebackend.uc.r.appspot.com/api/bulkMail",
+		"application/json",
+		c.Request.Body,
+	)
+	if err != nil {
+		response.Error = err.Error()
+	} else {
+		response.ParseResponse(resp)
+	}
 	c.Writer.WriteString(response.Marshal())
 }
