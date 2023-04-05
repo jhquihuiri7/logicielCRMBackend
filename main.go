@@ -2,15 +2,14 @@ package main
 
 import (
 	"database/sql"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"logicielcrm/middleware"
 	"logicielcrm/models/auth"
 	"logicielcrm/models/request"
 	"net/http"
 	"os"
-	"time"
 )
 
 var (
@@ -28,18 +27,14 @@ func init() {
 }
 func main() {
 	router = gin.New()
-	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"PUT", "PATCH", "POST", "GET", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Access-Control-Allow-Origin", "Content-Length", "Content-type"},
-		ExposeHeaders:    []string{"Content-Length", "Content-type"},
-		AllowCredentials: true,
-
-		AllowOriginFunc: func(origin string) bool {
-			return true
-		},
-		MaxAge: 12 * time.Hour,
-	}))
+	router.Use(middleware.CORSMiddleware())
+	//router.Use(csrf.Middleware(csrf.Options{
+	//	Secret: "secret123",
+	//	ErrorFunc: func(c *gin.Context) {
+	//		c.String(400, "CSRF token mismatch")
+	//		c.Abort()
+	//	},
+	//}))
 	router.POST("/api/login", Login)
 	router.GET("/api/validateToken", ValidateToken)
 	router.POST("/api/sendBulkMail", BulkMail)
@@ -62,7 +57,6 @@ func ValidateToken(c *gin.Context) {
 }
 func BulkMail(c *gin.Context) {
 	var response request.RequestResponse
-
 	resp, err := http.Post(
 		"https://mailservicebackend.uc.r.appspot.com/api/bulkMail",
 		"application/json",
