@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt"
-	jwtRequest "github.com/golang-jwt/jwt/request"
 	"golang.org/x/crypto/bcrypt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -91,9 +91,14 @@ func (resp *AuthResponse) DecodeJWT() {
 }
 func (resp *AuthResponse) ValidateToken(req *http.Request, db *sql.DB) AuthResponse {
 	var response AuthResponse
-	token, err := jwtRequest.ParseFromRequest(req, jwtRequest.OAuth2Extractor, func(token *jwt.Token) (interface{}, error) {
+	c, err := req.Cookie("token")
+	fmt.Println(c.Value)
+	if err != nil {
+		log.Fatal(err)
+	}
+	token, err := jwt.ParseWithClaims(c.Value, &Claim{}, func(token *jwt.Token) (interface{}, error) {
 		return PublicKey, nil
-	}, jwtRequest.WithClaims(&Claim{}))
+	})
 	if err != nil {
 		switch err.(type) {
 		case *jwt.ValidationError:
@@ -103,12 +108,15 @@ func (resp *AuthResponse) ValidateToken(req *http.Request, db *sql.DB) AuthRespo
 				response.Error = "Id Expired"
 			case jwt.ValidationErrorSignatureInvalid:
 				response.Error = "No valid token"
+			default:
+				response.Error = "No valid token"
 			}
 		default:
 			response.Error = "No valid token"
 		}
 	}
-	if token.Valid {
+
+	if token != nil && token.Valid {
 		response.Token = token.Raw
 		response.DecodeJWT()
 		client := AuthRequest{User: response.User}

@@ -27,14 +27,8 @@ func init() {
 }
 func main() {
 	router = gin.New()
+	router.Use(middleware.ORIGIN())
 	router.Use(middleware.CORSMiddleware())
-	//router.Use(csrf.Middleware(csrf.Options{
-	//	Secret: "secret123",
-	//	ErrorFunc: func(c *gin.Context) {
-	//		c.String(400, "CSRF token mismatch")
-	//		c.Abort()
-	//	},
-	//}))
 	router.POST("/api/login", Login)
 	router.GET("/api/validateToken", ValidateToken)
 	router.POST("/api/sendBulkMail", BulkMail)
